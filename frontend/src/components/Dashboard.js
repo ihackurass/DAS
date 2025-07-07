@@ -1,8 +1,9 @@
-// src/components/Dashboard.js - versión responsive
+// src/components/Dashboard.js - versión actualizada
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import useResponsive from '../hooks/useResponsive';
 import ClienteDashboard from './roles/ClienteDashboard';
+import EncargadoDashboard from './roles/EncargadoDashboard'; // ← NUEVO IMPORT
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -15,6 +16,21 @@ const Dashboard = () => {
     setActiveTab(tabId);
     if (isMobile) {
       setSidebarOpen(false);
+    }
+  };
+
+  // ← NUEVA FUNCIÓN: Renderizar dashboard según el rol
+  const renderDashboard = () => {
+    switch (user.rol) {
+      case 'cliente':
+        return <ClienteDashboard activeTab={activeTab} />;
+      case 'encargado':
+        return <EncargadoDashboard activeTab={activeTab} />;
+      case 'asesor':
+        // Por ahora usar cliente dashboard, luego crearemos AsesorDashboard
+        return <ClienteDashboard activeTab={activeTab} />;
+      default:
+        return <ClienteDashboard activeTab={activeTab} />;
     }
   };
 
@@ -44,9 +60,17 @@ const Dashboard = () => {
 
             {/* User info - responsive */}
             <div className="flex items-center space-x-2 sm:space-x-4">
-              <div className="bg-gradient-to-r from-blue-400 to-purple-500 text-white px-2 sm:px-4 py-2 rounded-full shadow-lg">
+              <div className={`text-white px-2 sm:px-4 py-2 rounded-full shadow-lg ${
+                user.rol === 'cliente' ? 'bg-gradient-to-r from-blue-400 to-purple-500' :
+                user.rol === 'asesor' ? 'bg-gradient-to-r from-green-400 to-emerald-500' :
+                user.rol === 'encargado' ? 'bg-gradient-to-r from-orange-400 to-red-500' :
+                'bg-gradient-to-r from-gray-400 to-gray-500'
+              }`}>
                 <span className="text-sm sm:text-base font-medium">
                   {isMobile ? user.nombre.split(' ')[0] : user.nombre}
+                </span>
+                <span className="text-xs ml-1 opacity-80">
+                  ({user.rol})
                 </span>
               </div>
               
@@ -105,14 +129,14 @@ const Dashboard = () => {
           flex-1 p-4 sm:p-6 lg:p-8
           ${isMobile && sidebarOpen ? 'overflow-hidden' : ''}
         `}>
-          <ClienteDashboard activeTab={activeTab} />
+          {renderDashboard()}
         </main>
       </div>
     </div>
   );
 };
 
-// Helper function
+// ← FUNCIÓN ACTUALIZADA: Menús por rol
 const getMenuItems = (rol) => {
   switch (rol) {
     case 'cliente':
@@ -121,6 +145,20 @@ const getMenuItems = (rol) => {
         { id: 'solicitudes', name: 'Mis Solicitudes', icon: '📋' },
         { id: 'nueva-solicitud', name: 'Nueva Solicitud', icon: '➕' },
         { id: 'historial', name: 'Historial', icon: '📚' }
+      ];
+    case 'asesor':
+      return [
+        { id: 'dashboard', name: 'Dashboard', icon: '📊' },
+        { id: 'solicitudes-pendientes', name: 'Solicitudes Pendientes', icon: '⏳' },
+        { id: 'mis-asignaciones', name: 'Mis Asignaciones', icon: '📍' },
+        { id: 'buscar-localidades', name: 'Buscar Localidades', icon: '🔍' }
+      ];
+    case 'encargado':
+      return [
+        { id: 'dashboard', name: 'Dashboard', icon: '📊' },
+        { id: 'tickets', name: 'Tickets del Día', icon: '🎫' },
+        { id: 'buscar', name: 'Buscar Ticket', icon: '🔍' },
+        { id: 'reportes', name: 'Reportes', icon: '📈' }
       ];
     default:
       return [{ id: 'dashboard', name: 'Dashboard', icon: '📊' }];
