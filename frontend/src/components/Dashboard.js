@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import useResponsive from '../hooks/useResponsive';
 import ClienteDashboard from './roles/ClienteDashboard';
 import EncargadoDashboard from './roles/EncargadoDashboard'; // ← NUEVO IMPORT
+import AsesorDashboard from './roles/AsesorDashboard'; // ← AGREGAR
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -27,8 +28,7 @@ const Dashboard = () => {
       case 'encargado':
         return <EncargadoDashboard activeTab={activeTab} />;
       case 'asesor':
-        // Por ahora usar cliente dashboard, luego crearemos AsesorDashboard
-        return <ClienteDashboard activeTab={activeTab} />;
+        return <AsesorDashboard activeTab={activeTab} />; // ← CAMBIAR
       default:
         return <ClienteDashboard activeTab={activeTab} />;
     }
@@ -144,22 +144,17 @@ const getMenuItems = (rol) => {
         { id: 'dashboard', name: 'Dashboard', icon: '📊' },
         { id: 'solicitudes', name: 'Mis Solicitudes', icon: '📋' },
         { id: 'nueva-solicitud', name: 'Nueva Solicitud', icon: '➕' },
-        { id: 'historial', name: 'Historial', icon: '📚' }
       ];
     case 'asesor':
       return [
-        { id: 'dashboard', name: 'Dashboard', icon: '📊' },
-        { id: 'solicitudes-pendientes', name: 'Solicitudes Pendientes', icon: '⏳' },
-        { id: 'mis-asignaciones', name: 'Mis Asignaciones', icon: '📍' },
-        { id: 'buscar-localidades', name: 'Buscar Localidades', icon: '🔍' }
+        { id: 'solicitudes', name: 'Asignar Solicitudes', icon: '⏳' },
+        { id: 'localidades', name: 'Puntos de Agua', icon: '🏢' }
       ];
     case 'encargado':
       return [
-        { id: 'dashboard', name: 'Dashboard', icon: '📊' },
-        { id: 'tickets', name: 'Tickets del Día', icon: '🎫' },
-        { id: 'buscar', name: 'Buscar Ticket', icon: '🔍' },
-        { id: 'reportes', name: 'Reportes', icon: '📈' }
-      ];
+      { id: 'buscar', name: 'Buscar Ticket', icon: '🔍' },
+      { id: 'reportes', name: 'Reportes', icon: '📊' }  // ← AGREGAR ESTA LÍNEA
+    ];
     default:
       return [{ id: 'dashboard', name: 'Dashboard', icon: '📊' }];
   }

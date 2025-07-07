@@ -102,9 +102,9 @@ export const solicitudAPI = {
   listar: () => api.get('/solicitudes'),
   obtener: (id) => api.get(`/solicitudes/${id}`),
   obtenerAsignacion: (id) => api.get(`/solicitudes/${id}/asignacion`),
-  obtenerTicket: (id) => api.get(`/solicitudes/${id}/ticket`), // ← NUEVA FUNCIÓN
+  obtenerTicket: (id) => api.get(`/solicitudes/${id}/ticket`),
   actualizar: (id, data) => api.put(`/solicitudes/${id}`, data),
-  asignar: (id, asignacionData) => api.put(`/solicitudes/${id}/asignar`, asignacionData),
+  asignar: (id, asignacionData) => api.put(`/solicitudes/${id}/asignar`, asignacionData), // ← YA EXISTE
   cambiarEstado: (id, nuevoEstado) => api.put(`/solicitudes/${id}/estado`, { estado: nuevoEstado })
 };
 
@@ -134,6 +134,7 @@ export const localidadAPI = {
 };
 
 export const reporteAPI = {
+  resumenGeneral: () => api.get('/reportes/resumen-general'), // ← NUEVA FUNCIÓN SIMPLE
   generar: (reporteData) => api.post('/reportes', reporteData),
   obtener: (id) => api.get(`/reportes/${id}`),
   listarPorLocalidad: (localidadId) => api.get(`/reportes/localidad/${localidadId}`),

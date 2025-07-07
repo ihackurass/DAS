@@ -152,16 +152,20 @@ class TicketRepository {
         $whereClause = "l.encargado_id = ?";
         $params = [$encargadoId];
         
+        // ← COMENTAR ESTA PARTE TEMPORALMENTE
+        /*
         if ($fecha) {
-            $whereClause .= " AND DATE(t.fecha_llegada) = ?";
+            $whereClause .= " AND DATE(COALESCE(t.fecha_llegada, s.fecha_solicitud)) = ?";
             $params[] = $fecha;
         }
+        */
         
         $sql = "SELECT 
                     t.*,
                     s.cantidad_litros,
                     s.tipo_solicitud,
                     u.nombre as cliente_nombre,
+                    u.telefono as cliente_telefono,
                     l.nombre as localidad_nombre
                 FROM tickets t
                 JOIN solicitudes s ON t.solicitud_id = s.id
@@ -169,10 +173,46 @@ class TicketRepository {
                 JOIN asignaciones a ON s.id = a.solicitud_id
                 JOIN localidades l ON a.localidad_id = l.id
                 WHERE {$whereClause}
-                ORDER BY t.fecha_llegada DESC";
+                ORDER BY COALESCE(t.fecha_llegada, s.fecha_solicitud) DESC";
         
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Obtener todos los tickets (para cualquier encargado)
+     */
+    public function obtenerTodos() {
+        $sql = "SELECT 
+                    t.id,
+                    t.codigo_ticket,
+                    t.estado_entrega,
+                    t.fecha_llegada,
+                    t.cantidad_entregada,
+                    t.observaciones,
+                    s.cantidad_litros,
+                    s.tipo_solicitud,
+                    u.nombre as cliente_nombre,
+                    u.telefono as cliente_telefono,
+                    l.nombre as localidad_nombre
+                FROM tickets t
+                JOIN solicitudes s ON t.solicitud_id = s.id
+                JOIN usuarios u ON s.usuario_id = u.id
+                JOIN asignaciones a ON s.id = a.solicitud_id
+                JOIN localidades l ON a.localidad_id = l.id
+                ORDER BY 
+                    CASE t.estado_entrega 
+                        WHEN 'en_proceso' THEN 1
+                        WHEN 'pendiente' THEN 2
+                        WHEN 'entregado' THEN 3
+                        WHEN 'parcial' THEN 4
+                        WHEN 'cancelado' THEN 5
+                    END,
+                    COALESCE(t.fecha_llegada, s.fecha_solicitud) DESC";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
         return $stmt->fetchAll();
     }
 }

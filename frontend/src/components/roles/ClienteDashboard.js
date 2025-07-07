@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { solicitudAPI } from '../../services/api';
 import SolicitudForm from '../SolicitudForm';
 import AsignacionDetails from '../AsignacionDetails';
-import TicketStatus from '../TicketStatus'; // ← NUEVO IMPORT
+import TicketStatus from '../TicketStatus';
 import EstadisticasDashboard from '../EstadisticasDashboard'; // ← NUEVO IMPORT
 
 const ClienteDashboard = ({ activeTab }) => {
@@ -18,6 +18,15 @@ const ClienteDashboard = ({ activeTab }) => {
     }
   }, [activeTab]);
 
+  useEffect(() => {
+    if (showStats) {
+      const timer = setTimeout(() => {
+        setShowStats(false);
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [showStats]);
   const cargarSolicitudes = async () => {
     setLoading(true);
     try {
@@ -57,7 +66,6 @@ const ClienteDashboard = ({ activeTab }) => {
     return ['asignada', 'en_proceso', 'completada'].includes(estado);
   };
 
-  // ← NUEVA FUNCIÓN: Verificar si tiene ticket
   const tieneTicket = (estado) => {
     return ['asignada', 'en_proceso', 'completada'].includes(estado);
   };
@@ -109,7 +117,6 @@ const ClienteDashboard = ({ activeTab }) => {
               </div>
             </div>
 
-            {/* ← NUEVA CARD: Con Ticket */}
             <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200/50">
               <div className="flex items-center justify-between">
                 <div>
@@ -124,80 +131,68 @@ const ClienteDashboard = ({ activeTab }) => {
               </div>
             </div>
 
+            {/* ← NUEVA CARD: Ver Estadísticas */}
             <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200/50">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-500 text-sm">Completadas</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {solicitudes.filter(s => s.estado === 'completada').length}
-                  </p>
+                  <p className="text-gray-500 text-sm">Estadísticas</p>
+                  <p className="text-sm font-medium text-gray-800">Ver Completas</p>
                 </div>
-                <div className="bg-green-100 p-3 rounded-full">
-                  <span className="text-2xl">✅</span>
-                </div>
+                <button
+                  onClick={() => setShowStats(true)}
+                  className="bg-purple-100 hover:bg-purple-200 p-3 rounded-full transition-colors"
+                >
+                  <span className="text-2xl">📊</span>
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Recent Solicitudes - ACTUALIZADO */}
+          {/* Recent Solicitudes */}
           <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200/50">
             <h3 className="text-lg font-semibold mb-4">Últimas Solicitudes</h3>
             {loading ? (
-              <div className="text-center py-4">🔄 Cargando...</div>
+              <div className="text-center py-8">🔄 Cargando solicitudes...</div>
             ) : solicitudes.length > 0 ? (
               <div className="space-y-4">
                 {solicitudes.slice(0, 3).map((solicitud) => (
-                  <div key={solicitud.id} className="border border-gray-200 rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center space-x-3">
-                        <span className="text-xl">{getEstadoIcon(solicitud.estado)}</span>
-                        <div>
-                          <p className="font-medium">Solicitud #{solicitud.id}</p>
-                          <p className="text-sm text-gray-500">{solicitud.cantidad_litros}L - {solicitud.tipo_solicitud}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getEstadoColor(solicitud.estado)}`}>
-                          {solicitud.estado}
-                        </span>
-                        {puedeVerDetalles(solicitud.estado) && (
-                          <button
-                            onClick={() => handleVerDetalles(solicitud.id)}
-                            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors"
-                          >
-                            Ver Detalles
-                          </button>
-                        )}
+                  <div key={solicitud.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                    <div className="flex items-center space-x-4">
+                      <span className="text-2xl">{getEstadoIcon(solicitud.estado)}</span>
+                      <div>
+                        <p className="font-medium">{solicitud.cantidad_litros}L</p>
+                        <p className="text-sm text-gray-500">
+                          {new Date(solicitud.fecha_solicitud).toLocaleDateString()}
+                        </p>
                       </div>
                     </div>
-                    
-                    {/* ← NUEVA SECCIÓN: Mostrar estado del ticket si existe */}
-                    {tieneTicket(solicitud.estado) && (
-                      <div className="mt-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-3">
-                        <TicketStatus solicitudId={solicitud.id} compact={true} />
-                      </div>
-                    )}
+                    <div className="flex items-center space-x-3">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getEstadoColor(solicitud.estado)}`}>
+                        {solicitud.estado.charAt(0).toUpperCase() + solicitud.estado.slice(1)}
+                      </span>
+                      {puedeVerDetalles(solicitud.estado) && (
+                        <button
+                          onClick={() => handleVerDetalles(solicitud.id)}
+                          className="bg-blue-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-blue-600 transition-colors"
+                        >
+                          Ver Ticket
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 text-center py-4">No tienes solicitudes aún</p>
-            )}
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200/50">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 text-sm">Estadísticas</p>
-                <p className="text-sm font-medium text-gray-800">Ver Completas</p>
+              <div className="text-center py-8">
+                <p className="text-gray-500 mb-4">No tienes solicitudes aún</p>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="bg-blue-500 text-white px-4 py-2 rounded-xl hover:bg-blue-600 transition-colors"
+                >
+                  Crear primera solicitud
+                </button>
               </div>
-              <button
-                onClick={() => setShowStats(true)}
-                className="bg-purple-100 hover:bg-purple-200 p-3 rounded-full transition-colors"
-              >
-                <span className="text-2xl">📊</span>
-              </button>
-            </div>
+            )}
           </div>
         </>
       )}
@@ -210,90 +205,53 @@ const ClienteDashboard = ({ activeTab }) => {
           ) : solicitudes.length > 0 ? (
             <div className="space-y-4">
               {solicitudes.map((solicitud) => (
-                <div key={solicitud.id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-lg">{getEstadoIcon(solicitud.estado)}</span>
-                      <h4 className="font-medium">Solicitud #{solicitud.id}</h4>
+                <div key={solicitud.id} className="border border-gray-200 rounded-xl p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <span className="text-2xl">{getEstadoIcon(solicitud.estado)}</span>
+                      <div>
+                        <p className="font-medium text-lg">{solicitud.cantidad_litros}L</p>
+                        <p className="text-sm text-gray-500">
+                          Solicitado el {new Date(solicitud.fecha_solicitud).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-3">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${getEstadoColor(solicitud.estado)}`}>
-                        {solicitud.estado}
+                        {solicitud.estado.charAt(0).toUpperCase() + solicitud.estado.slice(1)}
                       </span>
                       {puedeVerDetalles(solicitud.estado) && (
                         <button
                           onClick={() => handleVerDetalles(solicitud.id)}
-                          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1"
+                          className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
                         >
-                          <span>📍</span>
-                          <span>Ver Dirección</span>
+                          Ver Detalles
                         </button>
                       )}
                     </div>
                   </div>
                   
-                  {/* Grid de información */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <p className="text-gray-500">Cantidad</p>
-                      <p className="font-medium">{solicitud.cantidad_litros}L</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Tipo</p>
-                      <p className="font-medium capitalize">{solicitud.tipo_solicitud}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Fecha</p>
-                      <p className="font-medium">{new Date(solicitud.fecha_solicitud).toLocaleDateString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Límite</p>
-                      <p className="font-medium">
-                        {solicitud.fecha_limite ? new Date(solicitud.fecha_limite).toLocaleDateString() : 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Descripción si existe */}
-                  {solicitud.descripcion && (
-                    <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                      <p className="text-sm text-gray-700">
-                        <span className="font-medium">Descripción:</span> {solicitud.descripcion}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* ← NUEVA SECCIÓN: Estado del ticket expandido */}
                   {tieneTicket(solicitud.estado) && (
-                    <div className="mt-4">
-                      <TicketStatus solicitudId={solicitud.id} compact={false} />
-                    </div>
-                  )}
-
-                  {/* Indicador visual mejorado para solicitudes asignadas */}
-                  {puedeVerDetalles(solicitud.estado) && (
-                    <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                    <div className="mt-4 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-blue-600 text-lg">📍</span>
-                          <div>
-                            <p className="text-sm font-medium text-blue-800">
-                              {solicitud.estado === 'asignada' ? 'Localidad asignada - Ticket generado' : 
-                               solicitud.estado === 'en_proceso' ? 'En proceso de entrega' : 
-                               'Entrega completada'}
-                            </p>
-                            <p className="text-xs text-blue-600">
-                              Haz clic en "Ver Dirección" para ver tu ticket y dirección
-                            </p>
-                          </div>
+                        <div>
+                          <p className="text-sm font-medium text-blue-800">
+                            {solicitud.estado === 'asignada' ? 
+                              'Localidad asignada - Ticket generado' : 
+                              solicitud.estado === 'en_proceso' ? 'En proceso de entrega' : 
+                              'Entrega completada'}
+                          </p>
+                          <p className="text-xs text-blue-600">
+                            Haz clic en "Ver Dirección" para ver tu ticket y dirección
+                          </p>
                         </div>
-                        <button
-                          onClick={() => handleVerDetalles(solicitud.id)}
-                          className="bg-white border border-blue-300 text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-lg text-xs font-medium transition-colors"
-                        >
-                          Ver Ticket
-                        </button>
                       </div>
+                      <button
+                        onClick={() => handleVerDetalles(solicitud.id)}
+                        className="bg-white border border-blue-300 text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+                      >
+                        Ver Ticket
+                      </button>
                     </div>
                   )}
                 </div>
@@ -323,6 +281,24 @@ const ClienteDashboard = ({ activeTab }) => {
           }}
         />
       )}
+
+    {/* Modal de Estadísticas */}
+    {showStats && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-2xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Header del modal */}
+        <div className="flex justify-between items-center p-6 border-b border-gray-200">
+          <h2 className="text-xl font-bold">📊 Estadísticas del Sistema</h2>
+          <div className="text-sm text-gray-500">Se cerrará automáticamente en 5 segundos</div>
+        </div>
+        
+        {/* Contenido del modal */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <EstadisticasDashboard />
+        </div>
+      </div>
+    </div>
+    )}
     </div>
   );
 };

@@ -124,4 +124,48 @@ class ReporteController extends BaseController {
             $this->jsonResponse($e->getMessage(), 400);
         }
     }
+    public function resumenGeneral() {
+        try {
+            $db = \Config\Database::getInstance()->getConnection();
+            
+            // Estadísticas básicas
+            $stmt = $db->query("
+                SELECT 
+                    (SELECT COUNT(*) FROM solicitudes) as total_solicitudes,
+                    (SELECT COUNT(*) FROM solicitudes WHERE estado = 'pendiente') as solicitudes_pendientes,
+                    (SELECT COUNT(*) FROM solicitudes WHERE estado = 'completada') as solicitudes_completadas,
+                    (SELECT COUNT(*) FROM solicitudes WHERE estado = 'cancelada') as solicitudes_canceladas,
+                    (SELECT COUNT(*) FROM tickets WHERE estado_entrega = 'entregado') as total_entregas,
+                    (SELECT COALESCE(SUM(cantidad_entregada), 0) FROM tickets WHERE estado_entrega = 'entregado') as total_litros_entregados,
+                    (SELECT COUNT(*) FROM usuarios) as total_usuarios,
+                    (SELECT COUNT(*) FROM localidades WHERE activo = 1) as total_localidades
+            ");
+            $stats = $stmt->fetch();
+            
+            // Calcular promedio y eficiencia
+            $stats['promedio_litros'] = $stats['total_entregas'] > 0 ? 
+                round($stats['total_litros_entregados'] / $stats['total_entregas']) : 0;
+            $stats['eficiencia_entregas'] = $stats['total_solicitudes'] > 0 ? 
+                round(($stats['solicitudes_completadas'] / $stats['total_solicitudes']) * 100) : 0;
+            
+            // Top localidades
+            $stmt = $db->query("
+                SELECT l.nombre, COUNT(t.id) as total_entregas
+                FROM localidades l
+                LEFT JOIN asignaciones a ON l.id = a.localidad_id
+                LEFT JOIN tickets t ON a.solicitud_id = t.solicitud_id AND t.estado_entrega = 'entregado'
+                WHERE l.activo = 1
+                GROUP BY l.id, l.nombre
+                HAVING total_entregas > 0
+                ORDER BY total_entregas DESC
+                LIMIT 5
+            ");
+            $stats['top_localidades'] = $stmt->fetchAll();
+            
+            $this->jsonResponse($stats);
+            
+        } catch (\Exception $e) {
+            $this->jsonResponse($e->getMessage(), 500);
+        }
+    }
 }

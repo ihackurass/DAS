@@ -219,54 +219,36 @@ class TicketController extends BaseController {
     // GET /api/tickets/encargado/{encargado_id} - Tickets por encargado
     public function obtenerPorEncargado($encargadoId) {
         try {
-            $fecha = $_GET['fecha'] ?? null; // Opcional: filtrar por fecha
+            $fecha = $_GET['fecha'] ?? null;
             
             $tickets = $this->ticketRepository->obtenerPorEncargado($encargadoId, $fecha);
             
-            // Formatear respuesta con estadísticas
+            // Contar estadísticas
             $estadisticas = [
                 'pendiente' => 0,
                 'en_proceso' => 0,
                 'entregado' => 0,
-                'cancelado' => 0,
-                'parcial' => 0
+                'parcial' => 0,
+                'cancelado' => 0
             ];
             
-            $ticketsFormateados = array_map(function($ticket) use (&$estadisticas) {
-                $estadisticas[$ticket['estado_entrega']]++;
-                
-                return [
-                    'id' => $ticket['id'],
-                    'codigo' => $ticket['codigo_ticket'],
-                    'estado' => $ticket['estado_entrega'],
-                    'fecha_llegada' => $ticket['fecha_llegada'],
-                    'cantidad_entregada' => $ticket['cantidad_entregada'],
-                    'solicitud' => [
-                        'cantidad_litros' => $ticket['cantidad_litros'],
-                        'tipo_solicitud' => $ticket['tipo_solicitud']
-                    ],
-                    'cliente' => [
-                        'nombre' => $ticket['cliente_nombre']
-                    ],
-                    'localidad' => [
-                        'nombre' => $ticket['localidad_nombre']
-                    ]
-                ];
-            }, $tickets);
+            foreach ($tickets as $ticket) {
+                $estado = $ticket['estado_entrega'];
+                if (isset($estadisticas[$estado])) {
+                    $estadisticas[$estado]++;
+                }
+            }
             
             $this->jsonResponse([
-                'encargado_id' => $encargadoId,
-                'fecha_filtro' => $fecha ?? 'todas',
-                'estadisticas' => $estadisticas,
-                'total_tickets' => count($ticketsFormateados),
-                'tickets' => $ticketsFormateados
+                'tickets' => $tickets,
+                'estadisticas' => $estadisticas
             ]);
             
         } catch (\Exception $e) {
             $this->jsonResponse($e->getMessage(), 500);
         }
     }
-    
+        
     // GET /api/solicitudes/{id}/ticket - Obtener ticket de una solicitud
     public function obtenerTicketDeSolicitud($id) {
         try {
@@ -292,6 +274,36 @@ class TicketController extends BaseController {
                     'cantidad_entregada' => $ticket['cantidad_entregada'],
                     'observaciones' => $ticket['observaciones']
                 ]
+            ]);
+            
+        } catch (\Exception $e) {
+            $this->jsonResponse($e->getMessage(), 500);
+        }
+    }
+    // GET /api/tickets/todos - Obtener todos los tickets
+    public function obtenerTodos() {
+        try {
+            $tickets = $this->ticketRepository->obtenerTodos();
+            
+            // Contar estadísticas
+            $estadisticas = [
+                'pendiente' => 0,
+                'en_proceso' => 0,
+                'entregado' => 0,
+                'parcial' => 0,
+                'cancelado' => 0
+            ];
+            
+            foreach ($tickets as $ticket) {
+                $estado = $ticket['estado_entrega'];
+                if (isset($estadisticas[$estado])) {
+                    $estadisticas[$estado]++;
+                }
+            }
+            
+            $this->jsonResponse([
+                'tickets' => $tickets,
+                'estadisticas' => $estadisticas
             ]);
             
         } catch (\Exception $e) {
